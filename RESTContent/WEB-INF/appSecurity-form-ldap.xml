@@ -6,8 +6,8 @@
 <b:beans xmlns="http://www.springframework.org/schema/security"
     xmlns:b="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
-                        http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.1.xsd">
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                        http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd">
 
 
     <!-- intercept-url hints
@@ -40,6 +40,7 @@
         <!--session-management session-fixation-protection="none" /-->
 
         <access-denied-handler error-page="/static/error/error401.html" />
+        <csrf disabled="true"/>
 
     </http>
 
@@ -51,6 +52,10 @@
          it obtains from the LDAP directory service. 	
          ALTER THIS SECTION TO MEET YOUR PRODUCTION DEPLOYMNET REQUIREMENTS
      -->
+
+
+    <http-firewall ref="httpFirewall"/>
+
     <http auto-config="false"
         use-expressions="true" 
         create-session="ifRequired" 
@@ -108,6 +113,8 @@
         <!-- authentication model -->
         <form-login login-page="/static/auth/login.html" 
             login-processing-url="/static/auth/j_spring_security_check"
+            username-parameter="j_username"
+            password-parameter="j_password"
             default-target-url="/static/home.html" 
             authentication-failure-url="/static/auth/loginfail.html"
             authentication-success-handler-ref="OEAuthnSuccessHandler" 
@@ -127,6 +134,8 @@
 
         <!-- login session controls -->
         <session-management session-fixation-protection="none" />
+        <!-- Disable org.springframework.security.web.csrf.CsrfFilter -->
+        <csrf disabled="true"/>
 
     </http>
 
@@ -145,7 +154,7 @@
            <b:property name="authenticationManager" ref="authenticationManager" />
     </b:bean>
     
-    <authentication-manager alias="authenticationManager">
+    <authentication-manager id="authenticationManager">
         <authentication-provider ref="preauthAuthProvider" />
     </authentication-manager>
     
@@ -266,19 +275,25 @@
          Note: You may use the WEB-INF/EncodePassword.bat or EncodePassword.sh
                to generate new passwords.
     -->
+    <b:bean name="bcryptEncoder"
+        class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" >
+    </b:bean>
+
     <authentication-manager id="RestManagerAuth" >
         <!-- REST Manager access -->
         <authentication-provider>
-            <!-- Require a strong password hashing in users.properties -->
-            <password-encoder hash="sha-256" base64="true" >
-                <salt-source user-property="username" />
-            </password-encoder>
+            <password-encoder ref="bcryptEncoder" />
             <user-service>
                 <user name="C62384a0F1516B00" 
-                      password="UVrkuS+PkvAxurOzB/mZAQujgOlEMjg3UjkVXEdyopw=" 
-                      authorities="ROLE_PSCADAPTER" />
+                    password="$2a$09$vnAOU2O3U0csoZSSdueX1e2fG8N49E5E6zq6oEU2WxUUeyZgk2HWW"
+                    authorities="ROLE_PSCAdapter" />
             </user-service>
         </authentication-provider>
     </authentication-manager>
+
+    <b:bean id="httpFirewall"
+      class="org.springframework.security.web.firewall.StrictHttpFirewall" >
+      <b:property name="allowUrlEncodedDoubleSlash" value="false"/> 
+    </b:bean>
 
 </b:beans>

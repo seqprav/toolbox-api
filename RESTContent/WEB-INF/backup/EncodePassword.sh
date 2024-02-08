@@ -55,6 +55,6 @@ fi
 # Set standard commands for invoking Java.
 EXECJAVA="$JRE_HOME"/bin/java
 BASEDIR=`dirname $0`
-ENCODE_PASSWORD_CLASSPATH="$BASEDIR/lib/restoe.jar":"$BASEDIR/lib/spring-security-core-5.3.1.RELEASE.jar":"$BASEDIR/lib/commons-logging-1.2.jar"
+ENCODE_PASSWORD_CLASSPATH="$BASEDIR/lib/restoe.jar":"$BASEDIR/lib/spring-security-core-3.1.1.RELEASE.jar"
 $EXECJAVA -cp $ENCODE_PASSWORD_CLASSPATH com.progress.rest.security.EncodePassword  $@
 

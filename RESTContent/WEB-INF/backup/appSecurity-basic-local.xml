@@ -6,8 +6,8 @@
 <b:beans xmlns="http://www.springframework.org/schema/security"
     xmlns:b="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-                        http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd">
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+                        http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.1.xsd">
 
     <!-- intercept-url hints
          role names in the access attribute must have "ROLE_" prefixes. What occurs 
@@ -38,7 +38,6 @@
         <!--session-management session-fixation-protection="none" /-->
 
         <access-denied-handler error-page="/static/error/error401.html" />
-        <csrf disabled="true"/>
 
     </http>
 
@@ -46,10 +45,7 @@
          the authentication/authorization process to its dynamic/static content.  
          ALTER THIS SECTION TO MEET YOUR PRODUCTION DEPLOYMENT REQUIREMENTS
      -->
-    
-     <http-firewall ref="httpFirewall"/>
-
-     <http auto-config="false" 
+    <http auto-config="false" 
         use-expressions="true" 
         create-session="stateless" 
         disable-url-rewriting="true" 
@@ -118,10 +114,6 @@
         <!--session-management session-fixation-protection="none" /-->
 
         <access-denied-handler error-page="/static/error/error401.html" />
-
-        <!-- Disable org.springframework.security.web.csrf.CsrfFilter -->
-        <csrf disabled="true"/>
-
     </http>
 
     <!-- The Pre-auth security filter for  SSO  -->
@@ -139,7 +131,7 @@
            <b:property name="authenticationManager" ref="authenticationManager" />
     </b:bean>
     
-    <authentication-manager id="authenticationManager">
+    <authentication-manager alias="authenticationManager">
         <authentication-provider ref="preauthAuthProvider" />
     </authentication-manager>
     
@@ -196,14 +188,6 @@
             class="com.progress.rest.security.OELogoutSuccessHandler">
     </b:bean>
 
-    <b:bean name="bcryptEncoder"
-        class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" >
-    </b:bean>
-
-    <b:bean name="noopEncoder"
-        class="org.springframework.security.crypto.password.NoOpPasswordEncoder">
-    </b:bean>
-
     <!-- Authentication manager reserved for PUBLIC anonymous authn 
          to the static and dynaic application content.
          Note: If you enable password salting (recommened for production
@@ -212,10 +196,10 @@
      -->
     <authentication-manager id="RestApplicationtAuth" >
         <authentication-provider>
-            <password-encoder ref="noopEncoder" />
-            <!-- Uncomment following and comment above password encoder to
-            add strong password encoder users.properties (bcrypt password) use EncodePassword for the same
-            <password-encoder ref="bcryptEncoder" />
+            <!-- Uncomment to add strong password hashing in users.properties 
+            <password-encoder hash="sha" base64="true">
+                <salt-source user-property="username" />
+            </password-encoder>
             -->
             <user-service properties="/WEB-INF/users.properties" />
         </authentication-provider>
@@ -235,18 +219,15 @@
     <!-- REST Manager access -->
     <authentication-manager id="RestManagerAuth" >
         <authentication-provider>
-           <password-encoder ref="bcryptEncoder" />
-           <user-service>
-              <user name="C62384a0F1516B00" 
-                    password="$2a$09$vnAOU2O3U0csoZSSdueX1e2fG8N49E5E6zq6oEU2WxUUeyZgk2HWW"
-                    authorities="ROLE_PSCAdapter" />
-           </user-service>
+            <password-encoder hash="sha-256" base64="true" >
+                <salt-source user-property="username" />
+            </password-encoder>
+            <user-service>
+                <user name="C62384a0F1516B00" 
+                      password="UVrkuS+PkvAxurOzB/mZAQujgOlEMjg3UjkVXEdyopw=" 
+                      authorities="ROLE_PSCAdapter" />
+            </user-service>
         </authentication-provider>
     </authentication-manager>
-
-    <b:bean id="httpFirewall"
-      class="org.springframework.security.web.firewall.StrictHttpFirewall" >
-      <b:property name="allowUrlEncodedDoubleSlash" value="false"/> 
-    </b:bean>
 
 </b:beans>

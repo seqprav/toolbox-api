@@ -46,7 +46,7 @@ set _EXECJAVA="%JRE_HOME%\bin\java"
 
 :getBaseDir
 SET batFilePath=%~dp0
-SET ENCODE_PASSWORD_CLASSPATH="%batFilePath%\lib\restoe.jar";"%batFilePath%\lib\spring-security-core-5.3.1.RELEASE.jar";"%batFilePath%\lib\commons-logging-1.2.jar"
+SET ENCODE_PASSWORD_CLASSPATH="%batFilePath%\lib\restoe.jar";"%batFilePath%\lib\spring-security-core-3.1.1.RELEASE.jar"
 goto runEncodePassword
 
 :runEncodePassword

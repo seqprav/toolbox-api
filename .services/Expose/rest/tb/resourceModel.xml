@@ -5,4 +5,10 @@
       <prgs:param name="SessionID" type="HEADER"/>
     </prgs:operation>
   </prgs:resource>
+  <prgs:resource consumes="application/json" name="_promotions2" path="/promotions2" produces="application/json">
+    <prgs:operation consumes="application/json" idls="toolbox-api/.services/AppServer/promotions.pidl::com.progress.openedge.pdt.bpmbindings" name="promotions..AddPromotion" produces="application/json" verb="GET">
+      <prgs:param name="SessionID" type="HEADER"/>
+      <prgs:param name="Promotions" type="HEADER"/>
+    </prgs:operation>
+  </prgs:resource>
 </prgs:model>

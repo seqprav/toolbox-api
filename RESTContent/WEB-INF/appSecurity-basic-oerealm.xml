@@ -6,8 +6,8 @@
 <b:beans xmlns="http://www.springframework.org/schema/security"
     xmlns:b="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
-                        http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.1.xsd">
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                        http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd">
 
     <!-- intercept-url hints
          role names in the access attribute must have "ROLE_" prefixes. What occurs 
@@ -38,6 +38,7 @@
         <!--session-management session-fixation-protection="none" /-->
 
         <access-denied-handler error-page="/static/error/error401.html" />
+        <csrf disabled="true"/>
 
     </http>
 
@@ -45,6 +46,9 @@
          the authentication/authorization process to its dynamic/static content.  
          ALTER THIS SECTION TO MEET YOUR PRODUCTION DEPLOYMENT REQUIREMENTS
      -->
+    
+    <http-firewall ref="httpFirewall"/>
+    
     <http auto-config="false" 
         use-expressions="true" 
         create-session="stateless" 
@@ -114,6 +118,8 @@
         <!--session-management session-fixation-protection="none" /-->
 
         <access-denied-handler error-page="/static/error/error401.html" />
+        <!-- Disable org.springframework.security.web.csrf.CsrfFilter -->
+        <csrf disabled="true"/>
     </http>
 
     <b:bean id="OEAuthenticationEntryPoint"
@@ -136,7 +142,7 @@
            <b:property name="authenticationManager" ref="authenticationManager" />
     </b:bean>
     
-    <authentication-manager alias="authenticationManager">
+    <authentication-manager id="authenticationManager">
         <authentication-provider ref="preauthAuthProvider" />
     </authentication-manager>
     
@@ -261,6 +267,7 @@
             <b:property name="lockedAttrName" value="ATTR_LOCKED" />
             <b:property name="expiredAttrName" value="ATTR_EXPIRED" />
             <b:property name="realmPwdAlg" value="0" />
+            <b:property name="connectionRetry" value="0"/>
             <!--
             <b:property name="realmTokenFile" value="" />
             -->
@@ -290,19 +297,26 @@
          Note: You may use the WEB-INF/EncodePassword.bat or EncodePassword.sh
                to generate new passwords.
     -->
+    <b:bean name="bcryptEncoder"
+        class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" >
+    </b:bean>
 
     <!-- REST Manager access -->
     <authentication-manager id="RestManagerAuth" >
         <authentication-provider>
-            <password-encoder hash="sha-256" base64="true" >
-                <salt-source user-property="username" />
-            </password-encoder>
+            <password-encoder ref="bcryptEncoder" />
             <user-service>
                 <user name="C62384a0F1516B00" 
-                      password="UVrkuS+PkvAxurOzB/mZAQujgOlEMjg3UjkVXEdyopw=" 
-                      authorities="ROLE_PSCAdapter" />
+                    password="$2a$09$vnAOU2O3U0csoZSSdueX1e2fG8N49E5E6zq6oEU2WxUUeyZgk2HWW"
+                    authorities="ROLE_PSCAdapter" />
             </user-service>
         </authentication-provider>
     </authentication-manager>
+
+
+    <b:bean id="httpFirewall"
+      class="org.springframework.security.web.firewall.StrictHttpFirewall" >
+      <b:property name="allowUrlEncodedDoubleSlash" value="false"/> 
+    </b:bean>
 
 </b:beans>

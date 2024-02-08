@@ -6,8 +6,8 @@
 <b:beans xmlns="http://www.springframework.org/schema/security"
     xmlns:b="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-                        http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd">
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+                        http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.1.xsd">
 
     <!-- intercept-url hints
          role names in the access attribute must have "ROLE_" prefixes. What occurs 
@@ -15,7 +15,11 @@
      -->
     <!-- Security space reserved by the OpenEdge REST Manager to signal 
          the application to update its state.  This URL space will always 
-         use a built-in account in a separate authentication provider.  
+         use a built-in account in a separate authentication provider. 
+         NB: Define Role names in the <intercept-url> as UPPERCASE because 
+         Spring Security LDAP bean will always UPPERCASE the role name
+         it obtains from the LDAP directory service. 	
+         ALTER THIS SECTION TO MEET YOUR PRODUCTION DEPLOYMNET REQUIREMENTS		 
          DO  NOT ALTER THIS HTTP SECURITY CONFIGURATION  
      -->
     <http pattern="/adapterman"
@@ -28,7 +32,7 @@
 
         <!-- Entry point for the REST Manager to cause a state update -->
         <intercept-url pattern="/adapterman" 
-                    access="hasAnyRole('ROLE_PSCAdapter')"/> 
+                    access="hasAnyRole('ROLE_PSCADAPTER')"/> 
 
         <http-basic />
         <anonymous enabled="false" />
@@ -38,7 +42,6 @@
         <!--session-management session-fixation-protection="none" /-->
 
         <access-denied-handler error-page="/static/error/error401.html" />
-        <csrf disabled="true"/>
 
     </http>
 
@@ -46,16 +49,13 @@
          the authentication/authorization process to its dynamic/static content.  
          ALTER THIS SECTION TO MEET YOUR PRODUCTION DEPLOYMENT REQUIREMENTS
      -->
-    
-     <http-firewall ref="httpFirewall"/>
-
-     <http auto-config="false" 
+    <http auto-config="false" 
         use-expressions="true" 
         create-session="stateless" 
         disable-url-rewriting="true" 
         authentication-manager-ref="RestApplicationtAuth"
         realm="REST Application" >
-                              
+         
         <!-- OpenEdge PRE AUTH Filter  -->
         <custom-filter position="PRE_AUTH_FILTER" 
                       ref="OEPreauthfilter" />
@@ -72,22 +72,22 @@
 
         <!-- HTTP REST Mapping Debug Information for Deployed Services -->
         <intercept-url pattern="/rest" 
-                    access="hasAnyRole('ROLE_PSCDebug')"/>
+                    access="hasAnyRole('ROLE_PSCDEBUG')"/>
         <intercept-url pattern="/rest/" 
-                    access="hasAnyRole('ROLE_PSCDebug')"/>
+                    access="hasAnyRole('ROLE_PSCDEBUG')"/>
 
         <!-- HTTP REST/Mobile AppServer service -->
         <intercept-url pattern="/rest/**" 
-                    access="hasAnyRole('ROLE_PSCUser')"/>
+                    access="hasAnyRole('ROLE_PSCUSER')"/>
 
         <!-- Restricted Mobile session class uses this page as part of its 
              login() operation, protect it so it triggers user 
              authentication -->
         <intercept-url pattern="/static/home.html" 
-                    access="hasAnyRole('ROLE_PSCUser')"/>
+                    access="hasAnyRole('ROLE_PSCUSER')"/>
 
 		<intercept-url pattern="/static/*.json"
-				access="hasAnyRole('ROLE_PSCUser')"/>
+				access="hasAnyRole('ROLE_PSCUSER')"/>
 
         <!-- Public shared HTTP REST/Mobile static files -->
         <intercept-url pattern="/*" method="GET" 
@@ -118,10 +118,6 @@
         <!--session-management session-fixation-protection="none" /-->
 
         <access-denied-handler error-page="/static/error/error401.html" />
-
-        <!-- Disable org.springframework.security.web.csrf.CsrfFilter -->
-        <csrf disabled="true"/>
-
     </http>
 
     <!-- The Pre-auth security filter for  SSO  -->
@@ -133,13 +129,13 @@
                   $DLC/bin/gendomreg.bat utility as "registryFile" property -->
            <b:property name="enabled" value="false"/> 
            <b:property name="key" value=""/>     
-          <!-- <b:property name="registryFile" value= "" /> -->
+           <!--<b:property name="registryFile" value= "" /> -->
            <b:property name="encoding" value="OECP"/> 
            <b:property name="headername" value="X-OE-CLIENT-CONTEXT-ID"/>  
            <b:property name="authenticationManager" ref="authenticationManager" />
     </b:bean>
     
-    <authentication-manager id="authenticationManager">
+    <authentication-manager alias="authenticationManager">
         <authentication-provider ref="preauthAuthProvider" />
     </authentication-manager>
     
@@ -176,7 +172,7 @@
              -->
     </b:bean>
 
-    <!-- The security filter that implements the CORS standard for controlling
+    <!-- The security filter that implements the CORS standard for controling
          cross site resource access by http clients. -->
     <b:bean id="OECORSFilter"
              class="com.progress.rest.security.OECORSFilter" >
@@ -196,29 +192,38 @@
             class="com.progress.rest.security.OELogoutSuccessHandler">
     </b:bean>
 
-    <b:bean name="bcryptEncoder"
-        class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" >
-    </b:bean>
-
-    <b:bean name="noopEncoder"
-        class="org.springframework.security.crypto.password.NoOpPasswordEncoder">
-    </b:bean>
+    <!-- Define the LDAP server you will use for account authentication.
+         Refer to standard LDAP URL specification schemes for details.
+         You may, or may not, require a 'manager' fully qualified DN of
+         a user account that has 'search' permission in the directory tree.
+         Consult your Directory Service admin for more information.
+    -->
+    <ldap-server id="PrimayLDAP"
+                 url="ldap://enter_hostname:389/root_dn_here"
+                 manager-dn="uid=admin,ou=system"
+                 manager-password="admin" />
 
     <!-- Authentication manager reserved for PUBLIC anonymous authn 
          to the static and dynaic application content.
-         Note: If you enable password salting (recommened for production
-               installations) you may use the WEB-INF/EncodePassword.bat 
-               or EncodePassword.sh to generate new passwords.
+         The parameters for the <ldap-authentication-provider> element
+         is dependent on the design and implementation of the
+         Directory Service.  Consult with the administrator for help
+         with defining the correct search filters and object attrubutes
+         to use.
+         WARNING: The ldap authentication provider upper cases all role
+         names found for the authenticated user in the directory service.
+         This affects setting the role names in the above <intercept-url>
+         elements.  Example: ldap name "OEUsers"  Spring role name "ROLE_OEUSERS"
      -->
     <authentication-manager id="RestApplicationtAuth" >
-        <authentication-provider>
-            <password-encoder ref="noopEncoder" />
-            <!-- Uncomment following and comment above password encoder to
-            add strong password encoder users.properties (bcrypt password) use EncodePassword for the same
-            <password-encoder ref="bcryptEncoder" />
-            -->
-            <user-service properties="/WEB-INF/users.properties" />
-        </authentication-provider>
+        <ldap-authentication-provider
+            server-ref="PrimayLDAP"
+            group-role-attribute="cn"
+            role-prefix="ROLE_"
+            group-search-filter="(member={0})"
+            group-search-base=""
+            user-search-base=""
+            user-search-filter="(uid={0})" />
     </authentication-manager>
 
     <!-- Authentication manager reserved for REST Manager HTTP Basic 
@@ -235,18 +240,15 @@
     <!-- REST Manager access -->
     <authentication-manager id="RestManagerAuth" >
         <authentication-provider>
-           <password-encoder ref="bcryptEncoder" />
-           <user-service>
-              <user name="C62384a0F1516B00" 
-                    password="$2a$09$vnAOU2O3U0csoZSSdueX1e2fG8N49E5E6zq6oEU2WxUUeyZgk2HWW"
-                    authorities="ROLE_PSCAdapter" />
-           </user-service>
+            <password-encoder hash="sha-256" base64="true" >
+                <salt-source user-property="username" />
+            </password-encoder>
+            <user-service>
+                <user name="C62384a0F1516B00" 
+                      password="UVrkuS+PkvAxurOzB/mZAQujgOlEMjg3UjkVXEdyopw=" 
+                      authorities="ROLE_PSCADAPTER" />
+            </user-service>
         </authentication-provider>
     </authentication-manager>
-
-    <b:bean id="httpFirewall"
-      class="org.springframework.security.web.firewall.StrictHttpFirewall" >
-      <b:property name="allowUrlEncodedDoubleSlash" value="false"/> 
-    </b:bean>
 
 </b:beans>
