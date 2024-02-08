@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<module-content version="11.7">
+<module id="aa4a0f31-2e11-434c-b9c8-9977b8d4488a" name="toolbox-api">
+<resource path="AppServer" publish="true"/>
+</module>
+</module-content>
